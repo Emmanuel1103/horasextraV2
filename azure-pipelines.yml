@@ -1,0 +1,150 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: environment
+    displayName: Environment
+    type: string
+    default: dev
+    values:
+      - dev
+      - prod
+
+variables:
+  prefix: fsd-procesos
+  tfstateContainer: tfstate
+  tfstateKey: fsd-gestion-horas-extra/${{ parameters.environment }}.tfstate
+
+  sharedRgDev: fsd-procesos-rg-eus2-dev-001
+  sharedRgProd: fsd-procesos-rg-eus2-prod-001
+  stateSaDev: fsdproceus2devst001
+  stateSaProd: fsdproceus2prodst001
+  acrDev: fsdproceus2devacr001
+  acrProd: fsdproceus2prodacr001
+
+  # Expected pipeline variables:
+  # - CLIENT_ID (App registration client id used as audience)
+  # - VITE_API_URL (optional build-time for frontend)
+
+stages:
+  - stage: plan
+    displayName: "Tofu Plan (${{ parameters.environment }})"
+    jobs:
+      - job: tofu_plan
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            displayName: "Install OpenTofu + Init + Plan"
+            inputs:
+              azureSubscription: sp-procesos-devops
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                TOFU_VERSION="1.6.2"
+                curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.tar.gz" -o /tmp/tofu.tgz
+                sudo tar -C /usr/local/bin -xzf /tmp/tofu.tgz tofu
+
+                if [ "${{ parameters.environment }}" = "dev" ]; then
+                  STATE_RG="$(sharedRgDev)"
+                  STATE_SA="$(stateSaDev)"
+                else
+                  STATE_RG="$(sharedRgProd)"
+                  STATE_SA="$(stateSaProd)"
+                fi
+
+                cd "infra/env/${{ parameters.environment }}"
+                tofu fmt -check -recursive
+                tofu init \
+                  -backend-config="resource_group_name=${STATE_RG}" \
+                  -backend-config="storage_account_name=${STATE_SA}" \
+                  -backend-config="container_name=$(tfstateContainer)" \
+                  -backend-config="key=$(tfstateKey)"
+                tofu validate
+                tofu plan -out plan.tfplan \
+                  -var="api_image_tag=PLAN_ONLY" \
+                  -var="web_image_tag=PLAN_ONLY" \
+                  -var="client_id=$(CLIENT_ID)"
+          - publish: infra/env/${{ parameters.environment }}/plan.tfplan
+            artifact: tofu-plan
+
+  - stage: build_push
+    displayName: "Build + Push Images (${{ parameters.environment }})"
+    dependsOn: plan
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            displayName: "ACR Build (backend + frontend)"
+            inputs:
+              azureSubscription: sp-procesos-devops
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                if [ "${{ parameters.environment }}" = "dev" ]; then
+                  ACR_NAME="$(acrDev)"
+                else
+                  ACR_NAME="$(acrProd)"
+                fi
+
+                API_IMAGE="$(prefix)-gestion-horas-extra-api:$(Build.BuildId)"
+                WEB_IMAGE="$(prefix)-gestion-horas-extra-web:$(Build.BuildId)"
+
+                az acr build -r "${ACR_NAME}" -t "${API_IMAGE}" -f "Dockerfile" backend
+                az acr build -r "${ACR_NAME}" -t "${WEB_IMAGE}" --build-arg "VITE_API_URL=$(VITE_API_URL)" -f "Dockerfile" frontend
+
+  - stage: apply
+    displayName: "Tofu Apply (${{ parameters.environment }})"
+    dependsOn: build_push
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: tofu_apply
+        environment: fsd-procesos-gestion-horas-extra-${{ parameters.environment }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: "Init + Apply"
+                  inputs:
+                    azureSubscription: sp-procesos-devops
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      set -euo pipefail
+                      TOFU_VERSION="1.6.2"
+                      curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.tar.gz" -o /tmp/tofu.tgz
+                      sudo tar -C /usr/local/bin -xzf /tmp/tofu.tgz tofu
+
+                      if [ "${{ parameters.environment }}" = "dev" ]; then
+                        STATE_RG="$(sharedRgDev)"
+                        STATE_SA="$(stateSaDev)"
+                      else
+                        STATE_RG="$(sharedRgProd)"
+                        STATE_SA="$(stateSaProd)"
+                      fi
+
+                      cd "infra/env/${{ parameters.environment }}"
+                      tofu init \
+                        -backend-config="resource_group_name=${STATE_RG}" \
+                        -backend-config="storage_account_name=${STATE_SA}" \
+                        -backend-config="container_name=$(tfstateContainer)" \
+                        -backend-config="key=$(tfstateKey)"
+
+                      tofu apply -auto-approve \
+                        -var="api_image_tag=$(Build.BuildId)" \
+                        -var="web_image_tag=$(Build.BuildId)" \
+                        -var="client_id=$(CLIENT_ID)"

@@ -1,0 +1,123 @@
+.page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.main {
+  padding: 6rem 1rem 2.5rem;
+}
+
+.container {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rightCol {
+  align-self: start;
+}
+
+.panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.panelHeader {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.panelDescription {
+  margin-top: 0.35rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.panelBody {
+  padding: 1rem 1.25rem;
+}
+
+.datesPanelBody {
+  padding: 0rem;
+}
+
+.panelFooter {
+  padding: 1rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoList {
+  display: grid;
+}
+
+.infoRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.75rem 0.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.infoRow:first-child {
+  border-top: 0;
+}
+
+.infoLabel {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.infoValue {
+  font-size: 0.9375rem;
+  color: #0f172a;
+}
+
+.approverBox {
+  padding: 0rem;
+}
+
+@media (min-width: 768px) {
+  .infoRow {
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+
+  .rightCol {
+    position: sticky;
+    top: 6rem;
+  }
+}

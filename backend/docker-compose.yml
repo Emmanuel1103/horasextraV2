@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - COSMOS_DB_URL=${COSMOS_DB_URL}
+      - COSMOS_DB_KEY=${COSMOS_DB_KEY}
+      - COSMOS_DB_DATABASE=${COSMOS_DB_DATABASE}
+      - TENANT_ID=${TENANT_ID}
+      - CLIENT_ID=${CLIENT_ID}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWKS_URI=${JWKS_URI}
+      - AZURE_BLOB_CONN=${AZURE_BLOB_CONN}
+      - AZURE_BLOB_CONTAINER=${AZURE_BLOB_CONTAINER}
+    volumes:
+      - ./:/app
+# Note: Cosmos DB emulator is platform specific; use Azure Cosmos account or emulator on Windows for local testing.
