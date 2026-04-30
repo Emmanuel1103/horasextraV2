@@ -1,12 +1,15 @@
 /**
- * Servicio API para solicitudes de horas extras
+ * requestsApi.ts — servicio de comunicación con la api de solicitudes
+ *
+ * centraliza todas las peticiones fetch relacionadas con las solicitudes de horas extras,
+ * incluyendo creación, consulta, aprobación y cálculos de previsualización.
  */
 
 import { API_BASE_URL, API_ENDPOINTS, getDefaultHeaders, handleApiError } from "@/config/api";
 import type { OvertimeFormSubmit, OvertimeRecord } from "@/types";
 
 /**
- * Crea una o múltiples solicitudes de horas extras
+ * envía los datos del formulario para crear una o múltiples solicitudes de horas extras.
  */
 export const createOvertimeRequests = async (formData: OvertimeFormSubmit): Promise<{
   success: boolean;
@@ -23,19 +26,18 @@ export const createOvertimeRequests = async (formData: OvertimeFormSubmit): Prom
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error creando solicitudes:", error);
+    console.error("error creando solicitudes:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Obtiene la lista de solicitudes con filtros
+ * recupera el listado de solicitudes aplicando filtros de búsqueda y paginación.
  */
 export const getOvertimeRequests = async (filters?: {
   estado?: string;
@@ -57,38 +59,20 @@ export const getOvertimeRequests = async (filters?: {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error obteniendo solicitudes:", error);
+    console.error("error obteniendo solicitudes:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Obtiene estadísticas de las solicitudes
+ * obtiene métricas de gestión y resúmenes estadísticos del sistema.
  */
-export const getEstadisticas = async (): Promise<{
-  resumen: {
-    totalSolicitudes: number;
-    pendientes: number;
-    aprobadas: number;
-    rechazadas: number;
-  };
-  mesActual: {
-    nombre: string;
-    totalHoras: number;
-    valorTotal: number;
-    solicitudes: number;
-  };
-  general: {
-    totalHoras: number;
-    valorTotal: number;
-  };
-}> => {
+export const getEstadisticas = async (): Promise<any> => {
   try {
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.requests.estadisticas}`, {
       method: "GET",
@@ -97,19 +81,18 @@ export const getEstadisticas = async (): Promise<{
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error obteniendo estadísticas:", error);
+    console.error("error obteniendo estadísticas:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Aprueba una solicitud
+ * ejecuta la acción de aprobación administrativa para una solicitud específica.
  */
 export const approveRequest = async (id: string, approverEmail: string): Promise<any> => {
   try {
@@ -121,19 +104,18 @@ export const approveRequest = async (id: string, approverEmail: string): Promise
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error aprobando solicitud:", error);
+    console.error("error aprobando solicitud:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Rechaza una solicitud
+ * marca una solicitud como rechazada en el sistema.
  */
 export const rejectRequest = async (id: string): Promise<any> => {
   try {
@@ -144,19 +126,18 @@ export const rejectRequest = async (id: string): Promise<any> => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error rechazando solicitud:", error);
+    console.error("error rechazando solicitud:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Marca una solicitud en revisión como revisada por nómina
+ * sincroniza el estado de revisión de una solicitud por parte del equipo de nómina.
  */
 export const markRequestReviewed = async (
   id: string,
@@ -175,18 +156,18 @@ export const markRequestReviewed = async (
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
     return await response.json();
   } catch (error: any) {
-    console.error("Error marcando solicitud como revisada:", error);
+    console.error("error marcando solicitud como revisada:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Cancela una solicitud
+ * permite al usuario retirar una solicitud enviada previamente.
  */
 export const cancelRequest = async (id: string): Promise<any> => {
   try {
@@ -197,19 +178,18 @@ export const cancelRequest = async (id: string): Promise<any> => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error cancelando solicitud:", error);
+    console.error("error cancelando solicitud:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Actualiza una solicitud
+ * actualiza campos específicos de una solicitud existente.
  */
 export const updateRequest = async (id: string, updates: Partial<OvertimeRecord>): Promise<any> => {
   try {
@@ -221,40 +201,20 @@ export const updateRequest = async (id: string, updates: Partial<OvertimeRecord>
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error("Error actualizando solicitud:", error);
+    console.error("error actualizando solicitud:", error);
     throw new Error(handleApiError(error));
   }
 };
 
 /**
- * Calcula horas y valor usando la lógica central del backend
+ * solicita al backend el cálculo de horas y valores para una entrada de tiempo antes de su envío.
  */
-export const calculateOvertimePreview = async (payload: {
-  fecha: string;
-  horaInicio: string;
-  horaFinal: string;
-  salario: number;
-  horariosConfig?: {
-    diarnaStart?: number;
-    diarnaEnd?: number;
-    nocturnaStart?: number;
-    nocturnaEnd?: number;
-  };
-}): Promise<{
-  cantidadHoras: number;
-  horasExtraDiurna: number;
-  horasExtraNocturna: number;
-  recargosDominicalFestivo: number;
-  valorHorasExtra: number;
-  diaSemana: number;
-  fecha: string;
-}> => {
+export const calculateOvertimePreview = async (payload: any): Promise<any> => {
   try {
     const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.requests.calculate}`, {
       method: "POST",
@@ -264,12 +224,13 @@ export const calculateOvertimePreview = async (payload: {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
+      throw new Error(errorData.message || errorData.error || `error ${response.status}`);
     }
 
     return await response.json();
   } catch (error: any) {
-    console.error("Error calculando horas:", error);
+    console.error("error calculando horas:", error);
     throw new Error(handleApiError(error));
   }
 };
+

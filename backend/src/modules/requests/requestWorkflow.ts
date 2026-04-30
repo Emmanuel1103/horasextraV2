@@ -1,3 +1,11 @@
+/**
+ * requestWorkflow.ts — motor de estados y gestión de flujo de aprobación
+ *
+ * define las reglas de transición entre estados (pendiente, en revisión, etc.)
+ * y la lógica para reconciliar los aprobadores necesarios según los centros
+ * de costo involucrados en una solicitud.
+ */
+
 import type { UnidadConfig } from "../system-config/system-config.model";
 import type { ApproverInfo, RequestEntity } from "./requests.repository";
 
@@ -10,6 +18,7 @@ export type WorkflowAction =
   | "REJECT"
   | "CANCEL";
 
+// mapa de transiciones válidas para el ciclo de vida de una solicitud
 const TRANSITIONS: Record<RequestState, Partial<Record<WorkflowAction, RequestState>>> = {
   pendiente: {
     REQUEST_REVIEW: "en_revision",
@@ -32,10 +41,14 @@ const TRANSITIONS: Record<RequestState, Partial<Record<WorkflowAction, RequestSt
   cancelado: {},
 };
 
+/**
+ * transiciona el estado de una solicitud basándose en una acción.
+ * @throws {Error} si la transición no está permitida.
+ */
 export const transitionState = (current: RequestState, action: WorkflowAction): RequestState => {
   const next = TRANSITIONS[current]?.[action];
   if (!next) {
-    throw new Error(`Transicion no permitida: ${current} -> ${action}`);
+    throw new Error(`transición no permitida: ${current} -> ${action}`);
   }
   return next;
 };
@@ -59,6 +72,10 @@ interface ReconcileApproversParams {
   unidades: UnidadConfig[];
 }
 
+/**
+ * sincroniza la lista de aprobadores de una solicitud con la configuración actual
+ * de las unidades de negocio y los centros de costo involucrados.
+ */
 export const reconcileApproversByCeco = ({
   existingApprovers,
   targetCecos,
@@ -110,7 +127,7 @@ export const reconcileApproversByCeco = ({
       });
   });
 
-  // Fallback: si no se pudieron resolver unidades/directores, conservar lo existente filtrado por CeCo.
+  // fallback: si no hay directores configurados, conserva lo existente que sea relevante
   const resolvedApprovers = nextApprovers.length > 0
     ? nextApprovers
     : existingApprovers
@@ -148,3 +165,4 @@ export const reconcileApproversByCeco = ({
     removed,
   };
 };
+

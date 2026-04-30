@@ -1,19 +1,31 @@
-﻿import nodemailer from "nodemailer";
+/**
+ * email.service.ts — servicio de notificaciones por correo electrónico
+ *
+ * este archivo gestiona el envío de correos utilizando nodemailer.
+ * se encarga de:
+ *  - configurar el transporte smtp.
+ *  - procesar plantillas de correo con variables dinámicas.
+ *  - enviar notificaciones de creación, aprobación y decisión de solicitudes.
+ */
+
+import nodemailer from "nodemailer";
 import { SystemConfigEntity } from "../modules/system-config/system-config.model";
 import { RequestEntity } from "../modules/requests/requests.repository";
 import { getUserById } from "../modules/users/users.service";
 import { logger } from "../utils/logger";
 
+/**
+ * crea y configura el transporte smtp basado en las variables de entorno.
+ */
 const createTransporter = () => {
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = parseInt(process.env.SMTP_PORT || "587");
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
     const smtpSecure = process.env.SMTP_SECURE === "true";
-    const smtpFrom = process.env.SMTP_FROM || smtpUser;
 
     if (!smtpHost || !smtpUser || !smtpPass) {
-        logger.warn("⚠️ SMTP configuration missing in environment variables. Email sending disabled.");
+        logger.warn("configuración smtp ausente. el envío de correos está deshabilitado.");
         return null;
     }
 
@@ -84,6 +96,10 @@ const getRequestDetailVariables = (
     };
 };
 
+/**
+ * envía los correos de solicitud de aprobación a los jefes correspondientes.
+ * filtra las fechas y centros de costo que corresponden a cada aprobador.
+ */
 export const sendRequestEmail = async (
     request: RequestEntity,
     config: SystemConfigEntity,
@@ -247,6 +263,9 @@ export const sendRequestEmail = async (
     }
 };
 
+/**
+ * envía el correo de notificación de decisión (aprobado/rechazado) al colaborador.
+ */
 export const sendDecisionEmail = async (request: RequestEntity, config: SystemConfigEntity) => {
     const transporter = createTransporter();
     if (!transporter || !config.decisionEmailTemplate) return;
